@@ -37,7 +37,6 @@
                     <select x-model="filters.state" @change="refreshIssues()" class="w-full border border-gray-300 rounded-lg px-3 py-2">
                         <option value="open">Open</option>
                         <option value="closed">Closed</option>
-                        <option value="all">All</option>
                     </select>
                 </div>
                 <div>
@@ -63,7 +62,7 @@
                     Showing <span x-text="issues.length"></span> issues
                 </p>
             </div>
-            
+
             <div x-show="loading" class="p-8 text-center">
                 <i class="fas fa-spinner fa-spin text-4xl text-blue-600"></i>
                 <p class="mt-2 text-gray-600">Loading issues...</p>
@@ -82,7 +81,7 @@
                                 <div class="flex items-center space-x-3 mb-2">
                                     <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium"
                                           :class="issue.state === 'open' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'">
-                                        <i class="fas fa-circle mr-1" :class="issue.state === 'open' ? 'text-green-600' : 'text-red-600'"></i>
+                                        <i class="fas fa-circle mr-1 text-[8px]" :class="issue.state === 'open' ? 'text-green-600' : 'text-red-600'"></i>
                                         <span x-text="issue.state"></span>
                                     </span>
                                     <span class="text-sm font-medium text-gray-900">
@@ -92,9 +91,9 @@
                                         <span class="inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-blue-100 text-blue-800" x-text="label"></span>
                                     </template>
                                 </div>
-                                
+
                                 <h3 class="text-lg font-medium text-gray-900 mb-2" x-text="issue.title"></h3>
-                                
+
                                 <div class="flex items-center space-x-4 text-sm text-gray-600">
                                     <span>
                                         <i class="fas fa-user mr-1"></i>
@@ -109,70 +108,160 @@
                                         <span x-text="issue.assignees.join(', ')"></span>
                                     </span>
                                 </div>
-                                
+
+                                <!-- Action Buttons -->
                                 <div class="mt-4 flex flex-wrap gap-2">
-                                    <button @click="analyzeIssue(issue)" 
+                                    <button @click="analyzeIssue(issue)"
                                             :disabled="analyzingIssue === issue.number"
-                                            class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition disabled:opacity-50">
-                                        <i class="fas fa-search mr-1"></i>
-                                        <span x-show="analyzingIssue !== issue.number">Analyze</span>
-                                        <span x-show="analyzingIssue === issue.number">Analyzing...</span>
+                                            class="px-3 py-1.5 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition disabled:opacity-50">
+                                        <template x-if="analyzingIssue !== issue.number">
+                                            <span><i class="fas fa-search mr-1"></i>Analyze</span>
+                                        </template>
+                                        <template x-if="analyzingIssue === issue.number">
+                                            <span><i class="fas fa-spinner fa-spin mr-1"></i>Analyzing...</span>
+                                        </template>
                                     </button>
-                                    
-                                    <button @click="generatePlan(issue)" 
+
+                                    <button @click="generatePlan(issue)"
                                             :disabled="planningIssue === issue.number"
-                                            class="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition disabled:opacity-50">
-                                        <i class="fas fa-tasks mr-1"></i>
-                                        <span x-show="planningIssue !== issue.number">Generate Plan</span>
-                                        <span x-show="planningIssue === issue.number">Planning...</span>
+                                            class="px-3 py-1.5 bg-green-600 text-white text-sm rounded hover:bg-green-700 transition disabled:opacity-50">
+                                        <template x-if="planningIssue !== issue.number">
+                                            <span><i class="fas fa-tasks mr-1"></i>Plan</span>
+                                        </template>
+                                        <template x-if="planningIssue === issue.number">
+                                            <span><i class="fas fa-spinner fa-spin mr-1"></i>Planning...</span>
+                                        </template>
                                     </button>
-                                    
-                                    <button @click="executeIssue(issue)" 
-                                            :disabled="executingIssue === issue.number"
-                                            class="px-3 py-1 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition disabled:opacity-50">
-                                        <i class="fas fa-play mr-1"></i>
-                                        <span x-show="executingIssue !== issue.number">Execute</span>
-                                        <span x-show="executingIssue === issue.number">Executing...</span>
+
+                                    <button @click="executeIssue(issue)"
+                                            :disabled="executingIssue === issue.number || !issue.actionPlan"
+                                            class="px-3 py-1.5 bg-purple-600 text-white text-sm rounded hover:bg-purple-700 transition disabled:opacity-50">
+                                        <template x-if="executingIssue !== issue.number">
+                                            <span><i class="fas fa-play mr-1"></i>Execute</span>
+                                        </template>
+                                        <template x-if="executingIssue === issue.number">
+                                            <span><i class="fas fa-spinner fa-spin mr-1"></i>Starting...</span>
+                                        </template>
                                     </button>
-                                    
-                                    <a :href="issue.html_url" target="_blank" class="px-3 py-1 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition">
-                                        <i class="fas fa-external-link-alt mr-1"></i>View on GitHub
+
+                                    <a :href="issue.html_url" target="_blank" class="px-3 py-1.5 bg-gray-600 text-white text-sm rounded hover:bg-gray-700 transition">
+                                        <i class="fas fa-external-link-alt mr-1"></i>GitHub
                                     </a>
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Analysis Results -->
-                        <div x-show="issue.analysis" x-transition class="mt-4 p-4 bg-blue-50 rounded-lg">
-                            <h4 class="font-semibold text-blue-900 mb-2">📊 Analysis Results</h4>
-                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                                <div>
-                                    <span class="font-medium">Complexity:</span> 
-                                    <span x-text="issue.analysis?.complexity + '/10'"></span>
+                        <div x-show="issue.analysis" x-transition class="mt-4 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                            <div class="flex justify-between items-start mb-3">
+                                <h4 class="font-semibold text-blue-900">Analysis Results</h4>
+                                <template x-if="issue.analysis?.session_url">
+                                    <a :href="issue.analysis.session_url" target="_blank"
+                                       class="text-xs text-blue-600 hover:underline">
+                                        View Devin Session <i class="fas fa-external-link-alt ml-1"></i>
+                                    </a>
+                                </template>
+                            </div>
+                            <template x-if="issue.analysis?.fallback">
+                                <p class="text-xs text-yellow-700 bg-yellow-50 px-2 py-1 rounded mb-2 inline-block">Fallback mode (Devin API unavailable)</p>
+                            </template>
+                            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm mb-3">
+                                <div class="bg-white rounded p-2">
+                                    <span class="font-medium text-gray-600 block text-xs">Complexity</span>
+                                    <span class="text-lg font-bold" x-text="(issue.analysis?.complexity || 0) + '/10'"></span>
                                 </div>
-                                <div>
-                                    <span class="font-medium">Confidence:</span> 
-                                    <span x-text="issue.analysis?.confidence_score + '%'"></span>
+                                <div class="bg-white rounded p-2">
+                                    <span class="font-medium text-gray-600 block text-xs">Confidence</span>
+                                    <span class="text-lg font-bold" x-text="(issue.analysis?.confidence_score || 0) + '%'"></span>
                                 </div>
-                                <div>
-                                    <span class="font-medium">Est. Time:</span> 
-                                    <span x-text="issue.analysis?.estimated_time"></span>
+                                <div class="bg-white rounded p-2">
+                                    <span class="font-medium text-gray-600 block text-xs">Est. Time</span>
+                                    <span class="text-lg font-bold" x-text="issue.analysis?.estimated_time || '-'"></span>
                                 </div>
                             </div>
-                            <div class="mt-2">
-                                <span class="font-medium">Scope:</span>
-                                <p class="text-sm text-gray-700 mt-1" x-text="issue.analysis?.scope"></p>
+                            <div class="text-sm">
+                                <span class="font-medium text-gray-700">Scope:</span>
+                                <p class="text-gray-600 mt-1" x-text="issue.analysis?.scope"></p>
+                            </div>
+                            <div class="mt-2 text-sm" x-show="issue.analysis?.requirements?.length > 0">
+                                <span class="font-medium text-gray-700">Requirements:</span>
+                                <ul class="mt-1 list-disc list-inside text-gray-600">
+                                    <template x-for="req in (issue.analysis?.requirements || [])" :key="req">
+                                        <li x-text="req"></li>
+                                    </template>
+                                </ul>
+                            </div>
+                            <div class="mt-2 text-sm" x-show="issue.analysis?.risks?.length > 0">
+                                <span class="font-medium text-gray-700">Risks:</span>
+                                <ul class="mt-1 list-disc list-inside text-gray-600">
+                                    <template x-for="risk in (issue.analysis?.risks || [])" :key="risk">
+                                        <li x-text="risk"></li>
+                                    </template>
+                                </ul>
                             </div>
                         </div>
-                        
+
                         <!-- Action Plan -->
-                        <div x-show="issue.actionPlan" x-transition class="mt-4 p-4 bg-green-50 rounded-lg">
-                            <h4 class="font-semibold text-green-900 mb-2">🎯 Action Plan</h4>
-                            <ol class="text-sm space-y-1">
-                                <template x-for="step in issue.actionPlan?.steps" :key="step">
-                                    <li x-text="step"></li>
+                        <div x-show="issue.actionPlan" x-transition class="mt-4 p-4 bg-green-50 rounded-lg border border-green-200">
+                            <div class="flex justify-between items-start mb-3">
+                                <h4 class="font-semibold text-green-900">Action Plan</h4>
+                                <template x-if="issue.actionPlan?.session_url">
+                                    <a :href="issue.actionPlan.session_url" target="_blank"
+                                       class="text-xs text-green-600 hover:underline">
+                                        View Devin Session <i class="fas fa-external-link-alt ml-1"></i>
+                                    </a>
                                 </template>
-                            </ol>
+                            </div>
+                            <template x-if="issue.actionPlan?.fallback">
+                                <p class="text-xs text-yellow-700 bg-yellow-50 px-2 py-1 rounded mb-2 inline-block">Fallback mode (Devin API unavailable)</p>
+                            </template>
+                            <div class="text-sm">
+                                <span class="font-medium text-gray-700">Steps:</span>
+                                <ol class="mt-1 list-decimal list-inside text-gray-600 space-y-1">
+                                    <template x-for="step in (issue.actionPlan?.steps || [])" :key="step">
+                                        <li x-text="step"></li>
+                                    </template>
+                                </ol>
+                            </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-3 mt-3 text-sm">
+                                <div x-show="issue.actionPlan?.files_to_create?.length > 0">
+                                    <span class="font-medium text-gray-700">Files to Create:</span>
+                                    <ul class="mt-1 text-gray-600">
+                                        <template x-for="f in (issue.actionPlan?.files_to_create || [])" :key="f">
+                                            <li class="font-mono text-xs">+ <span x-text="f"></span></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                                <div x-show="issue.actionPlan?.files_to_modify?.length > 0">
+                                    <span class="font-medium text-gray-700">Files to Modify:</span>
+                                    <ul class="mt-1 text-gray-600">
+                                        <template x-for="f in (issue.actionPlan?.files_to_modify || [])" :key="f">
+                                            <li class="font-mono text-xs">~ <span x-text="f"></span></li>
+                                        </template>
+                                    </ul>
+                                </div>
+                            </div>
+                            <div class="mt-2 text-sm" x-show="issue.actionPlan?.testing_strategy">
+                                <span class="font-medium text-gray-700">Testing:</span>
+                                <span class="text-gray-600" x-text="issue.actionPlan?.testing_strategy"></span>
+                            </div>
+                        </div>
+
+                        <!-- Execution Result -->
+                        <div x-show="issue.execution" x-transition class="mt-4 p-4 bg-purple-50 rounded-lg border border-purple-200">
+                            <div class="flex justify-between items-start mb-2">
+                                <h4 class="font-semibold text-purple-900">Execution Started</h4>
+                                <template x-if="issue.execution?.session_url">
+                                    <a :href="issue.execution.session_url" target="_blank"
+                                       class="text-sm text-purple-600 hover:underline font-medium">
+                                        Track in Devin <i class="fas fa-external-link-alt ml-1"></i>
+                                    </a>
+                                </template>
+                            </div>
+                            <div class="text-sm text-gray-600">
+                                <p>Session ID: <span class="font-mono" x-text="issue.execution?.session_id"></span></p>
+                                <p>Status: <span class="font-medium" x-text="issue.execution?.status"></span></p>
+                            </div>
                         </div>
                     </div>
                 </template>
@@ -181,17 +270,17 @@
     </main>
 
     <!-- Toast Notification -->
-    <div x-show="notification.show" 
+    <div x-show="notification.show"
          x-transition:enter="transition ease-out duration-300"
          x-transition:enter-start="opacity-0 transform translate-y-2"
          x-transition:enter-end="opacity-100 transform translate-y-0"
          x-transition:leave="transition ease-in duration-200"
          x-transition:leave-start="opacity-100"
          x-transition:leave-end="opacity-0"
-         class="fixed bottom-4 right-4 max-w-sm bg-white rounded-lg shadow-lg p-4 z-50">
+         class="fixed bottom-4 right-4 max-w-sm bg-white rounded-lg shadow-lg p-4 z-50 border">
         <div class="flex items-center">
             <div class="flex-shrink-0">
-                <i class="fas" :class="notification.type === 'success' ? 'fa-check-circle text-green-400' : 'fa-exclamation-circle text-red-400'"></i>
+                <i class="fas" :class="notification.type === 'success' ? 'fa-check-circle text-green-500' : notification.type === 'info' ? 'fa-info-circle text-blue-500' : 'fa-exclamation-circle text-red-500'"></i>
             </div>
             <div class="ml-3">
                 <p class="text-sm font-medium text-gray-900" x-text="notification.title"></p>
@@ -231,17 +320,17 @@
                     this.loading = true;
                     try {
                         const params = new URLSearchParams({
-                            state: this.filters.state === 'all' ? 'open' : this.filters.state,
+                            state: this.filters.state,
                             sort: this.filters.sort
                         });
-                        
+
                         if (this.filters.labels.trim()) {
                             params.append('labels', this.filters.labels.trim());
                         }
 
                         const response = await fetch(`/api/issues?${params}`);
                         if (!response.ok) throw new Error('Failed to fetch issues');
-                        
+
                         this.issues = await response.json();
                     } catch (error) {
                         this.showNotification('error', 'Error', error.message);
@@ -252,17 +341,22 @@
 
                 async analyzeIssue(issue) {
                     this.analyzingIssue = issue.number;
+                    this.showNotification('info', 'Analyzing', `Creating Devin session for issue #${issue.number}... This may take a few minutes.`);
                     try {
                         const response = await fetch(`/api/issues/${issue.number}/analyze`, {
                             method: 'POST'
                         });
-                        
-                        if (!response.ok) throw new Error('Failed to analyze issue');
-                        
+
+                        if (!response.ok) {
+                            const err = await response.json();
+                            throw new Error(err.error || 'Failed to analyze issue');
+                        }
+
                         const analysis = await response.json();
                         issue.analysis = analysis;
-                        
-                        this.showNotification('success', 'Analysis Complete', `Issue #${issue.number} analyzed successfully`);
+
+                        const mode = analysis.fallback ? ' (fallback)' : '';
+                        this.showNotification('success', 'Analysis Complete' + mode, `Issue #${issue.number}: complexity ${analysis.complexity}/10, confidence ${analysis.confidence_score}%`);
                     } catch (error) {
                         this.showNotification('error', 'Analysis Failed', error.message);
                     } finally {
@@ -272,25 +366,26 @@
 
                 async generatePlan(issue) {
                     this.planningIssue = issue.number;
+                    this.showNotification('info', 'Planning', `Generating action plan for issue #${issue.number}...`);
                     try {
                         const response = await fetch(`/api/issues/${issue.number}/plan`, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                analysis: issue.analysis
-                            })
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ analysis: issue.analysis })
                         });
-                        
-                        if (!response.ok) throw new Error('Failed to generate action plan');
-                        
+
+                        if (!response.ok) {
+                            const err = await response.json();
+                            throw new Error(err.error || 'Failed to generate action plan');
+                        }
+
                         const actionPlan = await response.json();
                         issue.actionPlan = actionPlan;
-                        
-                        this.showNotification('success', 'Plan Generated', `Action plan for #${issue.number} created`);
+
+                        const mode = actionPlan.fallback ? ' (fallback)' : '';
+                        this.showNotification('success', 'Plan Generated' + mode, `${(actionPlan.steps || []).length} steps for issue #${issue.number}`);
                     } catch (error) {
-                        this.showNotification('error', 'Plan Generation Failed', error.message);
+                        this.showNotification('error', 'Plan Failed', error.message);
                     } finally {
                         this.planningIssue = null;
                     }
@@ -298,11 +393,11 @@
 
                 async executeIssue(issue) {
                     if (!issue.actionPlan) {
-                        this.showNotification('error', 'No Action Plan', 'Please generate an action plan first');
+                        this.showNotification('error', 'No Plan', 'Generate an action plan first');
                         return;
                     }
 
-                    if (!confirm(`Are you sure you want to execute the action plan for issue #${issue.number}?`)) {
+                    if (!confirm(`Start a Devin session to execute the action plan for issue #${issue.number}?`)) {
                         return;
                     }
 
@@ -310,20 +405,20 @@
                     try {
                         const response = await fetch(`/api/issues/${issue.number}/execute`, {
                             method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json'
-                            },
-                            body: JSON.stringify({
-                                actionPlan: issue.actionPlan
-                            })
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ actionPlan: issue.actionPlan })
                         });
-                        
-                        if (!response.ok) throw new Error('Failed to execute issue');
-                        
+
+                        if (!response.ok) {
+                            const err = await response.json();
+                            throw new Error(err.error || 'Failed to execute');
+                        }
+
                         const result = await response.json();
-                        
-                        this.showNotification('success', 'Execution Started', 
-                            `Issue #${issue.number} execution started (ID: ${result.execution_id})`);
+                        issue.execution = result;
+
+                        this.showNotification('success', 'Execution Started',
+                            `Devin is working on issue #${issue.number}. Track progress in the Devin session.`);
                     } catch (error) {
                         this.showNotification('error', 'Execution Failed', error.message);
                     } finally {
@@ -332,16 +427,8 @@
                 },
 
                 showNotification(type, title, message) {
-                    this.notification = {
-                        show: true,
-                        type,
-                        title,
-                        message
-                    };
-                    
-                    setTimeout(() => {
-                        this.notification.show = false;
-                    }, 5000);
+                    this.notification = { show: true, type, title, message };
+                    setTimeout(() => { this.notification.show = false; }, 6000);
                 }
             };
         }

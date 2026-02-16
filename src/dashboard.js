@@ -14,7 +14,7 @@ class Dashboard {
     this.port = process.env.PORT || 3000;
     this.githubClient = new GitHubClient();
     this.devinClient = new DevinClient();
-    
+
     this.setupMiddleware();
     this.setupRoutes();
   }
@@ -25,7 +25,7 @@ class Dashboard {
   }
 
   setupRoutes() {
-    // API Routes
+    // List issues
     this.app.get('/api/issues', async (req, res) => {
       try {
         const { state = 'open', labels, sort = 'created' } = req.query;
@@ -40,6 +40,7 @@ class Dashboard {
       }
     });
 
+    // Get single issue with comments
     this.app.get('/api/issues/:number', async (req, res) => {
       try {
         const issue = await this.githubClient.getIssue(req.params.number);
@@ -50,6 +51,7 @@ class Dashboard {
       }
     });
 
+    // Analyze issue with Devin (creates a session, polls, returns results)
     this.app.post('/api/issues/:number/analyze', async (req, res) => {
       try {
         const issue = await this.githubClient.getIssue(req.params.number);
@@ -60,6 +62,7 @@ class Dashboard {
       }
     });
 
+    // Generate action plan with Devin
     this.app.post('/api/issues/:number/plan', async (req, res) => {
       try {
         const issue = await this.githubClient.getIssue(req.params.number);
@@ -71,32 +74,43 @@ class Dashboard {
       }
     });
 
+    // Execute action plan with Devin (returns session immediately)
     this.app.post('/api/issues/:number/execute', async (req, res) => {
       try {
         const issue = await this.githubClient.getIssue(req.params.number);
         const { actionPlan } = req.body;
-        
+
         if (!actionPlan) {
           return res.status(400).json({ error: 'Action plan is required' });
         }
 
         const result = await this.devinClient.executeActionPlan(issue, actionPlan);
-        
+
         // Add comment to GitHub issue
-        await this.githubClient.addComment(issue.number, 
-          `🤖 **Devin AI Automation Started**\n\n` +
-          `**Execution ID:** ${result.execution_id}\n` +
-          `**Status:** ${result.status}\n` +
-          `**Progress:** ${result.progress}\n\n` +
-          `**Action Plan:**\n${actionPlan.steps.join('\n')}`
+        await this.githubClient.addComment(issue.number,
+          `**Devin AI Session Started**\n\n` +
+          `Session: ${result.session_url}\n` +
+          `Status: ${result.status}\n\n` +
+          `Action Plan:\n${(actionPlan.steps || []).map((s, i) => `${i + 1}. ${s}`).join('\n')}`
         );
-        
+
         res.json(result);
       } catch (error) {
         res.status(500).json({ error: error.message });
       }
     });
 
+    // Get Devin session status
+    this.app.get('/api/sessions/:sessionId', async (req, res) => {
+      try {
+        const session = await this.devinClient.getSession(req.params.sessionId);
+        res.json(session);
+      } catch (error) {
+        res.status(500).json({ error: error.message });
+      }
+    });
+
+    // Add comment to issue
     this.app.post('/api/issues/:number/comment', async (req, res) => {
       try {
         const { body } = req.body;
@@ -107,6 +121,7 @@ class Dashboard {
       }
     });
 
+    // Update issue
     this.app.put('/api/issues/:number', async (req, res) => {
       try {
         const updatedIssue = await this.githubClient.updateIssue(req.params.number, req.body);
@@ -130,15 +145,14 @@ class Dashboard {
   async start() {
     try {
       this.app.listen(this.port, () => {
-        console.log(`🚀 Dashboard running at http://localhost:${this.port}`);
-        console.log(`📊 Open your browser to view the dashboard`);
+        console.log(`Dashboard running at http://localhost:${this.port}`);
       });
-      
+
       // Auto-open browser
       setTimeout(() => {
         open(`http://localhost:${this.port}`);
       }, 1000);
-      
+
     } catch (error) {
       console.error('Failed to start dashboard:', error.message);
       process.exit(1);
