@@ -4,19 +4,19 @@ An automation tool that integrates Devin AI with GitHub Issues for intelligent i
 
 ## Features
 
-- **📋 Issue Dashboard**: Web-based interface to view and manage GitHub issues
-- **🖥️ CLI Tool**: Command-line interface for quick operations
-- **🔍 Issue Analysis**: AI-powered scoping and confidence scoring
-- **📝 Action Planning**: Automated generation of implementation plans
-- **🚀 Execution**: Automated ticket completion with Devin AI
-- **💬 GitHub Integration**: Comments and updates directly on issues
+- **Issue Dashboard**: Web-based interface to view and manage GitHub issues
+- **CLI Tool**: Command-line interface for quick operations
+- **Issue Analysis**: AI-powered scoping and confidence scoring
+- **Action Planning**: Automated generation of implementation plans
+- **Execution**: Automated ticket completion with Devin AI
+- **GitHub Integration**: Comments and updates directly on issues
 
 ## Installation
 
 1. Clone the repository:
 ```bash
-git clone <repository-url>
-cd github-issues-devin-integration
+git clone https://github.com/MadhuvanthiSriPad/github-issue-automation.git
+cd github-issue-automation
 ```
 
 2. Install dependencies:
@@ -67,14 +67,14 @@ npm run cli
 
 List issues:
 ```bash
-npm run cli list
-npm run cli list --state open --labels bug,enhancement
-npm run cli list --sort updated
+npm start -- list
+npm start -- list --state open --labels bug,enhancement
+npm start -- list --sort updated
 ```
 
 Analyze a specific issue:
 ```bash
-npm run cli analyze 123
+npm start -- analyze 123
 ```
 
 ## API Endpoints
@@ -128,39 +128,6 @@ src/
     └── index.html     # Dashboard UI
 ```
 
-## Features in Detail
-
-### Issue Analysis
-
-- **Scope Analysis**: Detailed breakdown of work required
-- **Complexity Scoring**: 1-10 scale for difficulty assessment
-- **Confidence Score**: 1-100% for successful completion
-- **Risk Assessment**: Identification of potential blockers
-- **Time Estimation**: Projected completion time
-
-### Action Planning
-
-- **Step-by-step Implementation**: Detailed workflow
-- **File Management**: Files to create and modify
-- **Testing Strategy**: Automated and manual testing approaches
-- **Dependencies**: Required packages and resources
-- **Success Criteria**: Definition of done
-
-### Execution
-
-- **Automated Implementation**: Devin executes the action plan
-- **Progress Tracking**: Real-time status updates
-- **GitHub Integration**: Automatic comments and status updates
-- **Error Handling**: Graceful failure recovery
-
-## Contributing
-
-1. Fork the repository
-2. Create a feature branch
-3. Make your changes
-4. Add tests if applicable
-5. Submit a pull request
-
 ## License
 
-MIT License - see LICENSE file for details.
+MIT
