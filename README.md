@@ -128,6 +128,3 @@ src/
     └── index.html     # Dashboard UI
 ```
 
-## License
-
-MIT
